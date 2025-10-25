@@ -1,0 +1,115 @@
+<% layout('layouts/boilerplate') %>
+
+<style>
+  #filters {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2rem;
+    padding: 1rem;
+  }
+
+  .filter {
+    text-align: center;
+    cursor: pointer;
+    width: 80px;
+    font-family: sans-serif;
+    color: #333;
+  }
+
+  .filter i {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: #ff385c;
+  }
+
+  .filter p {
+    font-size: 0.9rem;
+    margin: 0;
+  }
+
+  .filter:hover {
+    color: #ff385c;
+    background-color: #f5f5f5;
+    border-radius: 5px;
+  }
+
+  .tax-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: sans-serif;
+  }
+</style>
+
+<div id="filters">
+  <!-- Filters -->
+  <% const filters = [ { icon: 'fa-fire', label: 'Trending' }, { icon: 'fa-bed',
+  label: 'Rooms' }, { icon: 'fa-mountain-sun', label: 'Nature' }, { icon:
+  'fa-water', label: 'Beach' }, { icon: 'fa-city', label: 'Urban' }, { icon:
+  'fa-campground', label: 'Camping' }, { icon: 'fa-tree', label: 'Cabins' }, {
+  icon: 'fa-person-swimming', label: 'Pools' }, { icon: 'fa-snowflake', label:
+  'Arctic' }, { icon: 'fa-vihara', label: 'Historic' } ]; %> <%
+  filters.forEach(f => { %>
+  <div class="filter">
+    <div><i class="fa-solid <%= f.icon %>"></i></div>
+    <p><%= f.label %></p>
+  </div>
+  <% }) %>
+
+  <!-- Tax Toggle -->
+  <div class="tax-toggle">
+    <input
+      class="form-check-input"
+      type="checkbox"
+      role="switch"
+      id="flexSwitchCheckDefault"
+    />
+    <label class="form-check-label" for="flexSwitchCheckDefault"
+      >Display Taxes</label
+    >
+  </div>
+</div>
+
+<div class="row row-cols-lg-3 row-cols-md-3 row-cols-1 mt-3">
+  <% for (let listing of allListings) { %>
+  <a href="/listings/<%= listing._id %>" class="listing-link">
+    <div class="card col listing-card">
+      <img
+        src="<%= listing.image.url %>"
+        class="card-img-top"
+        alt="listing image"
+        style="width: 100%; height: 200px; object-fit: cover"
+      />
+      <div class="card-body">
+        <p class="card-text">
+          <b><%= listing.title %><br /></b>
+          <span class="price" data-base="<%= listing.price %>">
+            &#8377; <%= listing.price.toLocaleString("en-IN") %>
+          </span>
+          /night
+        </p>
+      </div>
+    </div>
+  </a>
+  <% } %>
+</div>
+
+<script>
+  const taxSwitch = document.getElementById("flexSwitchCheckDefault");
+  const priceEls = document.querySelectorAll(".price");
+
+  taxSwitch.addEventListener("change", function () {
+    priceEls.forEach((el) => {
+      const basePrice = parseFloat(el.getAttribute("data-base"));
+      if (this.checked) {
+        const taxed = Math.round(basePrice * 1.18);
+        el.innerHTML = `&#8377; ${taxed.toLocaleString(
+          "en-IN"
+        )} <i>+18% GST</i>`;
+      } else {
+        el.innerHTML = `&#8377; ${basePrice.toLocaleString("en-IN")}`;
+      }
+    });
+  });
+</script>
