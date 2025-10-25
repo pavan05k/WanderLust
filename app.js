@@ -24,8 +24,8 @@ const userRouter = require("./routes/user.js");
 const dburl = process.env.ATLASDB_URL;
 mongoose
   .connect(dburl)
-  .then(() => console.log("Connected to MongoDB"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+  .then(() => console.log("✅ Connected to MongoDB"))
+  .catch((err) => console.error("❌ MongoDB connection error:", err));
 
 // View engine setup
 app.engine("ejs", ejsMate);
@@ -74,17 +74,18 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routes
+// Root route
 app.get("/", (req, res) => {
   res.render("home"); // Make sure views/home.ejs exists
 });
 
+// Routers
 app.use("/listings", listingRouter);
 app.use("/listings/:id/reviews", reviewRouter);
 app.use("/", userRouter);
 
-// 404 handler
-app.all("*", (req, res, next) => {
+// Catch-all route (Express v5 safe)
+app.all("/:path(*)", (req, res, next) => {
   next(new ExpressError(404, "Page not found"));
 });
 
@@ -97,5 +98,5 @@ app.use((err, req, res, next) => {
 // Server
 const port = process.env.PORT || 8080;
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  console.log(`🚀 Server running on port ${port}`);
 });
