@@ -1,4 +1,4 @@
-if (process.env.NODE_ENV != "production") {
+if (process.env.NODE_ENV !== "production") {
   require("dotenv").config();
 }
 
@@ -20,40 +20,30 @@ const listingRouter = require("./routes/listing.js");
 const reviewRouter = require("./routes/review.js");
 const userRouter = require("./routes/user.js");
 
-// const MONGO_URL = "mongodb://127.0.0.1:27017/wanderlust";
-
+// MongoDB connection
 const dburl = process.env.ATLASDB_URL;
+mongoose
+  .connect(dburl)
+  .then(() => console.log("Connected to MongoDB"))
+  .catch((err) => console.error("MongoDB connection error:", err));
 
-main()
-  .then(() => {
-    console.log("Connected to MongoDB");
-  })
-  .catch((err) => {
-    console.error("Error connecting to MongoDB:", err);
-  });
-async function main() {
-  await mongoose.connect(dburl);
-}
-
+// View engine setup
+app.engine("ejs", ejsMate);
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
+
+// Middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride("_method"));
-app.engine("ejs", ejsMate);
-app.use(express.static(path.join(__dirname, "views", "listings", "public")));
-app.use(express.static("public"));
+app.use(express.static(path.join(__dirname, "public")));
 
+// Session setup
 const store = MongoStore.create({
   mongoUrl: dburl,
-  crypto: {
-    secret: process.env.SECRET,
-  },
+  crypto: { secret: process.env.SECRET },
   touchAfter: 24 * 60 * 60,
 });
-
-store.on("error", function (e) {
-  console.log("session store error", e);
-});
+store.on("error", (e) => console.log("Session store error", e));
 
 const sessionOptions = {
   store,
@@ -66,73 +56,46 @@ const sessionOptions = {
     httpOnly: true,
   },
 };
-
-// app.get("/", (req, res) => {
-//   res.send("Hello World!");
-// });
-
 app.use(session(sessionOptions));
 app.use(flash());
 
+// Passport setup
 app.use(passport.initialize());
 app.use(passport.session());
 passport.use(new LocalStrategy(User.authenticate()));
-
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
-const validateListing = (req, res, next) => {
-  let { error } = listingSchema.validate(req.body);
-  if (error) {
-    let errMsg = error.details.map((el) => el.message).join(",");
-    throw new ExpressError(400, errMsg);
-  } else {
-    next();
-  }
-};
-
-const validateReview = (req, res, next) => {
-  let { error } = reviewSchema.validate(req.body);
-  if (error) {
-    let errMsg = error.details.map((el) => el.message).join(",");
-    throw new ExpressError(400, errMsg);
-  } else {
-    next();
-  }
-};
-
+// Flash messages and current user
 app.use((req, res, next) => {
   res.locals.success = req.flash("success");
   res.locals.error = req.flash("error");
   res.locals.currentUser = req.user;
-  // console.log(success);
   next();
 });
 
-// app.get("/demouser", async (req, res) => {
-//   let fakeUser = new User({
-//     email: "student@gmail.com",
-//     username: "student-delta",
-//   });
-//   let registeredUSer = await User.register(fakeUser, "pavan05k");
-//   res.send(registeredUSer);
-// });
+// Routes
+app.get("/", (req, res) => {
+  res.render("home"); // Make sure views/home.ejs exists
+});
 
 app.use("/listings", listingRouter);
 app.use("/listings/:id/reviews", reviewRouter);
 app.use("/", userRouter);
 
-app.all("/*path", (req, res, next) => {
-  next(new ExpressError(404, "page not found"));
+// 404 handler
+app.all("*", (req, res, next) => {
+  next(new ExpressError(404, "Page not found"));
 });
 
+// Error handler
 app.use((err, req, res, next) => {
-  let { statusCode = 500, message = " Something went wronge" } = err;
-  res.status(statusCode).render("error.ejs", { message });
-
-  // res.status(statusCode).send(message);
+  const { statusCode = 500, message = "Something went wrong" } = err;
+  res.status(statusCode).render("error", { message });
 });
 
-app.listen(8080, () => {
-  console.log("server is listening to port 8080");
+// Server
+const port = process.env.PORT || 8080;
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
